@@ -28,8 +28,6 @@ public class GameOverUI : MonoBehaviour {
     private void KitchenGameManager_OnStateChanged(object sender, System.EventArgs e) {
         if (GameManager.Instance.IsGameOver()) {
             Show();
-
-            recipesDeliveredText.text = DeliveryManager.Instance.GetSuccessfulRecipesAmount().ToString();
         } else {
             Hide();
         }

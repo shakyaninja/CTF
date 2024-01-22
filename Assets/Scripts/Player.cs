@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
-public class Player : NetworkBehaviour, IKitchenObjectParent {
+public class Player : NetworkBehaviour {
 
 
     public static event EventHandler OnAnyPlayerSpawned;
@@ -18,15 +18,6 @@ public class Player : NetworkBehaviour, IKitchenObjectParent {
 
     public static Player LocalInstance { get; private set; }
 
-
-
-    public event EventHandler OnPickedSomething;
-    public event EventHandler<OnSelectedCounterChangedEventArgs> OnSelectedCounterChanged;
-    public class OnSelectedCounterChangedEventArgs : EventArgs {
-        public BaseCounter selectedCounter;
-    }
-
-
     [SerializeField] private float moveSpeed = 7f;
     [SerializeField] private LayerMask countersLayerMask;
     [SerializeField] private LayerMask collisionsLayerMask;
@@ -37,8 +28,6 @@ public class Player : NetworkBehaviour, IKitchenObjectParent {
 
     private bool isWalking;
     private Vector3 lastInteractDir;
-    private BaseCounter selectedCounter;
-    private KitchenObject kitchenObject;
 
 
     private void Start() {
@@ -64,25 +53,17 @@ public class Player : NetworkBehaviour, IKitchenObjectParent {
     }
 
     private void NetworkManager_OnClientDisconnectCallback(ulong clientId) {
-        if (clientId == OwnerClientId && HasKitchenObject()) {
-            KitchenObject.DestroyKitchenObject(GetKitchenObject());
-        }
+       
     }
 
     private void GameInput_OnInteractAlternateAction(object sender, EventArgs e) {
         if (!GameManager.Instance.IsGamePlaying()) return;
 
-        if (selectedCounter != null) {
-            selectedCounter.InteractAlternate(this);
-        }
     }
 
     private void GameInput_OnInteractAction(object sender, System.EventArgs e) {
         if (!GameManager.Instance.IsGamePlaying()) return;
 
-        if (selectedCounter != null) {
-            selectedCounter.Interact(this);
-        }
     }
 
     private void Update() {
@@ -108,7 +89,7 @@ public class Player : NetworkBehaviour, IKitchenObjectParent {
         }
 
         float interactDistance = 2f;
-        if (Physics.Raycast(transform.position, lastInteractDir, out RaycastHit raycastHit, interactDistance, countersLayerMask)) {
+        /*if (Physics.Raycast(transform.position, lastInteractDir, out RaycastHit raycastHit, interactDistance, countersLayerMask)) {
             if (raycastHit.transform.TryGetComponent(out BaseCounter baseCounter)) {
                 // Has ClearCounter
                 if (baseCounter != selectedCounter) {
@@ -120,7 +101,7 @@ public class Player : NetworkBehaviour, IKitchenObjectParent {
             }
         } else {
             SetSelectedCounter(null);
-        }
+        }*/
     }
 
     private void HandleMovement() {
@@ -167,40 +148,6 @@ public class Player : NetworkBehaviour, IKitchenObjectParent {
         float rotateSpeed = 10f;
         transform.forward = Vector3.Slerp(transform.forward, moveDir, Time.deltaTime * rotateSpeed);
     }
-
-    private void SetSelectedCounter(BaseCounter selectedCounter) {
-        this.selectedCounter = selectedCounter;
-
-        OnSelectedCounterChanged?.Invoke(this, new OnSelectedCounterChangedEventArgs {
-            selectedCounter = selectedCounter
-        });
-    }
-
-    public Transform GetKitchenObjectFollowTransform() {
-        return kitchenObjectHoldPoint;
-    }
-
-    public void SetKitchenObject(KitchenObject kitchenObject) {
-        this.kitchenObject = kitchenObject;
-
-        if (kitchenObject != null) {
-            OnPickedSomething?.Invoke(this, EventArgs.Empty);
-            OnAnyPickedSomething?.Invoke(this, EventArgs.Empty);
-        }
-    }
-
-    public KitchenObject GetKitchenObject() {
-        return kitchenObject;
-    }
-
-    public void ClearKitchenObject() {
-        kitchenObject = null;
-    }
-
-    public bool HasKitchenObject() {
-        return kitchenObject != null;
-    }
-
 
     public NetworkObject GetNetworkObject() {
         return NetworkObject;

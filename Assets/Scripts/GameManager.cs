@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
+using Unity.Services.Authentication;
 using UnityEngine;
 
 public class GameManager : NetworkBehaviour {
@@ -24,6 +25,8 @@ public class GameManager : NetworkBehaviour {
         WaitingToStart,
         CountdownToStart,
         GamePlaying,
+        GameCapturedFlagPlaying,
+        RoundOver,
         GameOver,
     }
 
@@ -43,6 +46,8 @@ public class GameManager : NetworkBehaviour {
     private bool autoTestGamePausedState;
     [SerializeField]private CinemachineVirtualCamera virtualCamera;
     [SerializeField]private Camera mainCamera;
+    private SpawnFlag spawnFlag;
+    [SerializeField] private StatsManager _statsManager;
 
 
     private void Awake() {
@@ -50,11 +55,32 @@ public class GameManager : NetworkBehaviour {
 
         playerReadyDictionary = new Dictionary<ulong, bool>();
         playerPausedDictionary = new Dictionary<ulong, bool>();
+
+    }
+
+    [ServerRpc(RequireOwnership =false)]
+    private void RespawnFlagServerRpc()
+    {
+        spawnFlag.spawnFlag();
+    }
+
+    public void RespawnFlag()
+    {
+        RespawnFlagServerRpc();
     }
 
     private void Start() {
+        spawnFlag = GetComponent<SpawnFlag>();
+        _statsManager = GetComponent<StatsManager>();
         GameInput.Instance.OnPauseAction += GameInput_OnPauseAction;
         GameInput.Instance.OnInteractAction += GameInput_OnInteractAction;
+        RespawnFlag();
+    }
+
+    public void StartCapturedFlagTimer()
+    {
+        Debug.Log("capture flag timer started !!");
+        state.Value = State.CountdownToStart;
     }
 
     public override void OnNetworkSpawn() {
@@ -68,17 +94,30 @@ public class GameManager : NetworkBehaviour {
     }
 
     private void SceneManager_OnLoadEventCompleted(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut) {
+        Debug.Log("Scene Loading Completed...");
         foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds) {
             Transform playerTransform = Instantiate(playerPrefab);
             playerTransform.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId, true);
-            playerTransform.GetComponent<CameraActive>().ActivateCamera();
-            virtualCamera.gameObject.SetActive(false);
-            mainCamera.gameObject.SetActive(false);
-            Debug.Log(playerTransform);
-            //disable main camera
-            /*//make camera follow player
-            virtualCamera.GetComponent<CinemachineVirtualCamera>().Follow = playerTransform;
-            virtualCamera.GetComponent<CinemachineVirtualCamera>().LookAt = playerTransform;*/
+            Debug.Log("clientId: "+clientId);
+            Debug.Log("network clientId: "+NetworkManager.Singleton.LocalClientId);
+            AssignCameraToFollowPlayerClientRpc();
+        }
+
+    }
+
+    [ClientRpc]
+    private void AssignCameraToFollowPlayerClientRpc()
+    {
+        GameObject[] playerPrefabs = GameObject.FindGameObjectsWithTag("Player");
+        Debug.Log("players: "+ playerPrefabs.Length);
+        foreach (GameObject player in playerPrefabs)
+        {
+            Debug.Log("network clientId: "+NetworkManager.Singleton.LocalClientId);
+            Debug.Log("player clientId : "+player.GetComponent<NetworkObject>().OwnerClientId+", isLocalPlayer : "+player.GetComponent<NetworkObject>().IsLocalPlayer);   
+            if(player.GetComponent<NetworkObject>().IsLocalPlayer) { 
+                virtualCamera.GetComponent<CinemachineVirtualCamera>().Follow = player.transform;
+                virtualCamera.GetComponent<CinemachineVirtualCamera>().LookAt = player.transform;
+            }
         }
     }
 
@@ -138,6 +177,8 @@ public class GameManager : NetworkBehaviour {
             return;
         }
 
+        Debug.Log("state: "+state.Value);
+
         switch (state.Value) {
             case State.WaitingToStart:
                 break;
@@ -148,11 +189,15 @@ public class GameManager : NetworkBehaviour {
                     gamePlayingTimer.Value = gamePlayingTimerMax;
                 }
                 break;
-            case State.GamePlaying:
+            case State.GameCapturedFlagPlaying:
                 gamePlayingTimer.Value -= Time.deltaTime;
                 if (gamePlayingTimer.Value < 0f) {
-                    state.Value = State.GameOver;
+                    state.Value = State.RoundOver;
                 }
+                break;
+            case State.RoundOver:
+                //increment score of player whose holding the flag
+                state.Value = State.CountdownToStart;
                 break;
             case State.GameOver:
                 break;
@@ -192,6 +237,11 @@ public class GameManager : NetworkBehaviour {
 
     public float GetGamePlayingTimerNormalized() {
         return 1 - (gamePlayingTimer.Value / gamePlayingTimerMax);
+    }
+
+    public float GetGamePlayingTimer()
+    {
+        return gamePlayingTimer.Value;
     }
 
     public void TogglePauseGame() {
