@@ -27,6 +27,8 @@ public class Captured : MonoBehaviour
             other.GetComponent<SafeSide>().hasFlag = true;
             other.GetComponent<PassFlag>().isPassable = true;
             other.GetComponent<PassFlag>().Flag.SetActive(true);
+            //trigger game state change
+            GameManager.Instance.StartCapturedFlagTimer();
             Destroy(gameObject);
         }
     }
