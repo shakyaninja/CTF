@@ -18,12 +18,12 @@ public class CharacterColorSelectSingleUI : MonoBehaviour {
     }
 
     private void Start() {
-        GameMultiplayer.Instance.OnPlayerDataNetworkListChanged += KitchenGameMultiplayer_OnPlayerDataNetworkListChanged;
+        GameMultiplayer.Instance.OnPlayerDataNetworkListChanged += Multiplayer_OnPlayerDataNetworkListChanged;
         image.color = GameMultiplayer.Instance.GetPlayerColor(colorId);
         UpdateIsSelected();
     }
 
-    private void KitchenGameMultiplayer_OnPlayerDataNetworkListChanged(object sender, System.EventArgs e) {
+    private void Multiplayer_OnPlayerDataNetworkListChanged(object sender, System.EventArgs e) {
         UpdateIsSelected();
     }
 
@@ -36,6 +36,6 @@ public class CharacterColorSelectSingleUI : MonoBehaviour {
     }
 
     private void OnDestroy() {
-        GameMultiplayer.Instance.OnPlayerDataNetworkListChanged -= KitchenGameMultiplayer_OnPlayerDataNetworkListChanged;
+        GameMultiplayer.Instance.OnPlayerDataNetworkListChanged -= Multiplayer_OnPlayerDataNetworkListChanged;
     }
 }

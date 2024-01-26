@@ -19,18 +19,21 @@ public class Player : NetworkBehaviour {
     public static Player LocalInstance { get; private set; }
 
     [SerializeField] private float moveSpeed = 7f;
+    [SerializeField] private float jumpForce = 50f;
     [SerializeField] private LayerMask countersLayerMask;
     [SerializeField] private LayerMask collisionsLayerMask;
-    [SerializeField] private Transform kitchenObjectHoldPoint;
+    [SerializeField] private Transform FlagObjectHoldPoint;
     [SerializeField] private List<Vector3> spawnPositionList;
     [SerializeField] private PlayerVisual playerVisual;
 
 
     private bool isWalking;
     private Vector3 lastInteractDir;
+    private Rigidbody playerRb;
 
 
     private void Start() {
+        playerRb = GetComponent<Rigidbody>();
         GameInput.Instance.OnInteractAction += GameInput_OnInteractAction;
         GameInput.Instance.OnInteractAlternateAction += GameInput_OnInteractAlternateAction;
 
@@ -73,6 +76,21 @@ public class Player : NetworkBehaviour {
 
         HandleMovement();
         HandleInteractions();
+        HandleJump();
+        CheckFlag();
+    }
+
+    private void CheckFlag()
+    {
+        PlayerData playerData = GameMultiplayer.Instance.GetPlayerDataFromClientId(OwnerClientId);
+        if (playerData.hasFlag)
+        {
+            GetComponent<PassFlag>().ActivateFlag();
+        }
+        else
+        {
+            GetComponent<PassFlag>().DeactivateFlag();
+        }
     }
 
     public bool IsWalking() {
@@ -149,6 +167,15 @@ public class Player : NetworkBehaviour {
         transform.forward = Vector3.Slerp(transform.forward, moveDir, Time.deltaTime * rotateSpeed);
     }
 
+    private void HandleJump()
+    {
+        bool isJumpActive = GameInput.Instance.GetJumpAction();
+        if (isJumpActive)
+        {
+            playerRb.AddForce(transform.up * jumpForce,ForceMode.Force);
+        }
+
+    }
     public NetworkObject GetNetworkObject() {
         return NetworkObject;
     }

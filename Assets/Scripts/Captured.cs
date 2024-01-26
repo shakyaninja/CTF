@@ -1,21 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
-public class Captured : MonoBehaviour
+public class Captured : NetworkBehaviour
 {
     [SerializeField] private Vector3 TopOffset;
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 
     private void OnTriggerEnter(Collider other)
     {
@@ -25,9 +15,9 @@ public class Captured : MonoBehaviour
             gameObject.transform.localPosition = Vector3.zero + TopOffset;
             gameObject.transform.localRotation = Quaternion.identity;  */ 
             other.GetComponent<SafeSide>().hasFlag = true;
-            other.GetComponent<PassFlag>().isPassable = true;
-            other.GetComponent<PassFlag>().Flag.SetActive(true);
-            //trigger game state change
+            other.GetComponent<PassFlag>().ActivateFlag();
+            //also change player data
+            GameMultiplayer.Instance.ChangePlayerHasFlag(true);
             GameManager.Instance.StartCapturedFlagTimer();
             Destroy(gameObject);
         }

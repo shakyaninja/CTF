@@ -1,10 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using Unity.Netcode;
 using Unity.Services.Authentication;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Color = UnityEngine.Color;
 
 public class GameMultiplayer : NetworkBehaviour {
 
@@ -24,7 +26,7 @@ public class GameMultiplayer : NetworkBehaviour {
     public event EventHandler OnPlayerDataNetworkListChanged;
 
 
-    [SerializeField] private List<Color> playerColorList;
+    [SerializeField] private List<UnityEngine.Color> playerColorList;
 
 
     private NetworkList<PlayerData> playerDataNetworkList;
@@ -135,15 +137,18 @@ public class GameMultiplayer : NetworkBehaviour {
     }
 
     [ServerRpc(RequireOwnership = false)]
-    public void IncrementPlayerScoreServerRpc(ServerRpcParams serverRpcParams = default)
+    public void IncrementPlayerScoreWithFlagServerRpc(ServerRpcParams serverRpcParams = default)
     {
-        int playerDataIndex = GetPlayerDataIndexFromClientId(serverRpcParams.Receive.SenderClientId);
-
-        PlayerData playerData = playerDataNetworkList[playerDataIndex];
-
-        playerData.score = playerData.score + 1;
-
-        playerDataNetworkList[playerDataIndex] = playerData;
+        for (int i = 0; i < playerDataNetworkList.Count; i++)
+        {
+            if (playerDataNetworkList[i].hasFlag)
+            {
+                Debug.Log("scored by: player " + i);
+                PlayerData playerDataWithFlag = playerDataNetworkList[i];
+                playerDataWithFlag.score += 1;
+                playerDataNetworkList[i] = playerDataWithFlag;
+            }
+        }
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -211,9 +216,32 @@ public class GameMultiplayer : NetworkBehaviour {
         ChangePlayerColorServerRpc(colorId);
     }
 
-    public void IncrementPlayerScore(ulong clientId)
+    public void ChangePlayerHasFlag(bool state)
     {
+        ChangePlayerHasFlagServerRpc(state);
+    }
 
+    public void ResetPlayerHasFlag()
+    {
+        ResetPlayerHasFlagServerRpc();
+    }
+
+    public void IncrementPlayerScoreWithFlag()
+    {
+        IncrementPlayerScoreWithFlagServerRpc();
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void ResetPlayerHasFlagServerRpc(ServerRpcParams serverRpcParams = default)
+    {
+        //first reset all playerData has flags
+        int playerCount = playerDataNetworkList.Count;
+        for (int i = 0; i < playerCount; i++)
+        {
+            PlayerData tempPd = playerDataNetworkList[i];
+            tempPd.hasFlag = false;
+            playerDataNetworkList[i] = tempPd;
+        }
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -228,6 +256,19 @@ public class GameMultiplayer : NetworkBehaviour {
         PlayerData playerData = playerDataNetworkList[playerDataIndex];
 
         playerData.colorId = colorId;
+
+        playerDataNetworkList[playerDataIndex] = playerData;
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void ChangePlayerHasFlagServerRpc(bool state, ServerRpcParams serverRpcParams = default)
+    {
+        ResetPlayerHasFlag();
+        int playerDataIndex = GetPlayerDataIndexFromClientId(serverRpcParams.Receive.SenderClientId);
+
+        PlayerData playerData = playerDataNetworkList[playerDataIndex];
+
+        playerData.hasFlag = state;
 
         playerDataNetworkList[playerDataIndex] = playerData;
     }

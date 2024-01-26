@@ -10,33 +10,42 @@ public class ScoreboardUI : NetworkBehaviour
     [SerializeField]private GameObject[] playerScoreUIs;
     [SerializeField] private GameObject individualPlayerScoreUI;
 
+
     // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
         InitializeScoreboard();
+        GameMultiplayer.Instance.OnPlayerDataNetworkListChanged += ScoreboardUI_PlayerDataNetworkList_OnListChanged;
         //UpdatePlayerScoreboardUI();
+    }
+
+    private void ScoreboardUI_PlayerDataNetworkList_OnListChanged(object sender, System.EventArgs e)
+    {
+
     }
 
     private void InitializeScoreboard()
     {
-        foreach (ulong playerId in NetworkManager.Singleton.ConnectedClientsIds)
+        GameObject playerScoreUIGO = Instantiate(individualPlayerScoreUI);
+        playerScoreUIGO.GetComponent<PlayerScoreUI>().playerId = OwnerClientId;
+        playerScoreUIGO.transform.SetParent(transform);
+        playerScoreUIGO.GetComponent<NetworkObject>().Spawn();
+
+       /* foreach (ulong playerId in GameMultiplayer.Instance.)
         {
-            GameObject playerScoreUIGO = Instantiate(individualPlayerScoreUI);
-            playerScoreUIGO.GetComponent<PlayerScoreUI>().playerId = playerId;
-            playerScoreUIGO.transform.SetParent(transform);
             playerScoreUIs.Append(playerScoreUIGO);
-        }
+        }*/
     }
 
-   /* private void UpdatePlayerScoreboardUI()
-    {
-        foreach (GameObject playerScore in playerScoreUIs)
-        {
-        }
-    }*/
+    /* private void UpdatePlayerScoreboardUI()
+     {
+         foreach (GameObject playerScore in playerScoreUIs)
+         {
+         }
+     }*/
 
-    // Update is called once per frame
-    void Update()
+    private void OnDestroy()
     {
+        GameMultiplayer.Instance.OnPlayerDataNetworkListChanged -= ScoreboardUI_PlayerDataNetworkList_OnListChanged;
     }
 }

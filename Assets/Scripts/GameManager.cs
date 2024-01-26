@@ -37,8 +37,8 @@ public class GameManager : NetworkBehaviour {
     private NetworkVariable<State> state = new NetworkVariable<State>(State.WaitingToStart);
     private bool isLocalPlayerReady;
     private NetworkVariable<float> countdownToStartTimer = new NetworkVariable<float>(3f);
-    [SerializeField]private NetworkVariable<float> gamePlayingTimer = new NetworkVariable<float>(0f);
-    private float gamePlayingTimerMax = 90f;
+    private NetworkVariable<float> gamePlayingTimer = new NetworkVariable<float>(0f);
+    private float gamePlayingTimerMax = 10f;
     private bool isLocalGamePaused = false;
     private NetworkVariable<bool> isGamePaused = new NetworkVariable<bool>(false);
     private Dictionary<ulong, bool> playerReadyDictionary;
@@ -83,6 +83,11 @@ public class GameManager : NetworkBehaviour {
         state.Value = State.GameCapturedFlagPlaying;
     }
 
+    public void ResetCapturedFlagTimer()
+    {
+        Debug.Log("Timer reset...");
+        state.Value = State.GamePlaying;
+    }
     public override void OnNetworkSpawn() {
         state.OnValueChanged += State_OnValueChanged;
         isGamePaused.OnValueChanged += IsGamePaused_OnValueChanged;
@@ -191,17 +196,35 @@ public class GameManager : NetworkBehaviour {
                 break;
             case State.GameCapturedFlagPlaying:
                 gamePlayingTimer.Value -= Time.deltaTime;
+                Debug.Log("game play captured time :"+gamePlayingTimer.Value);
                 if (gamePlayingTimer.Value < 0f) {
                     state.Value = State.RoundOver;
                 }
                 break;
+            case State.GamePlaying:
+                gamePlayingTimer.Value = gamePlayingTimerMax;
+                break;
             case State.RoundOver:
                 //increment score of player whose holding the flag
+                IncrementScoreOfPlayerWithFlag();
+
+                //reset flag with all players
+                GameMultiplayer.Instance.ResetPlayerHasFlag();
+                ResetCapturedFlagTimer();
+
+                //respawn flag
+                RespawnFlag();
+
                 state.Value = State.CountdownToStart;
                 break;
             case State.GameOver:
                 break;
         }
+    }
+
+    private void IncrementScoreOfPlayerWithFlag()
+    {
+        GameMultiplayer.Instance.IncrementPlayerScoreWithFlag();
     }
 
     private void LateUpdate() {
@@ -270,6 +293,8 @@ public class GameManager : NetworkBehaviour {
 
         TestGamePausedState();
     }
+
+    
 
     private void TestGamePausedState() {
         foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds) {

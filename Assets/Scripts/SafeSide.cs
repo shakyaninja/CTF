@@ -18,7 +18,7 @@ public class SafeSide : NetworkBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (hasFlag && isInsideSafeArea &&  Time.time > startTime + safeTime)
+        /*if (hasFlag && isInsideSafeArea &&  Time.time > startTime + safeTime)
         {
             //safe side 
             Debug.Log("Scored !!");
@@ -34,7 +34,7 @@ public class SafeSide : NetworkBehaviour
             GetComponent<PassFlag>().Flag.gameObject.SetActive(false);
             hasFlag = false;
             GameManager.Instance.RespawnFlag();
-        }
+        }*/
     }
 
     private void OnCollisionEnter(Collision collision)

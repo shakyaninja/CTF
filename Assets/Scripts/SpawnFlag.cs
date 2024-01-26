@@ -13,7 +13,7 @@ public class SpawnFlag : NetworkBehaviour
         Debug.Log("spawn...");
         int randomIndex = Random.Range(0, FlagSpawnpositions.Length - 1);
         GameObject flag = Instantiate(Flag, FlagSpawnpositions[randomIndex].position, FlagSpawnpositions[randomIndex].rotation);
-        flag.GetComponent<NetworkObject>().Spawn();
+        flag.GetComponent<NetworkObject>().Spawn(true);
     }
 
 

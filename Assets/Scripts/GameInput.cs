@@ -23,6 +23,7 @@ public class GameInput : MonoBehaviour {
         Move_Down,
         Move_Left,
         Move_Right,
+        Jump,
         Interact,
         InteractAlternate,
         Pause,
@@ -80,6 +81,11 @@ public class GameInput : MonoBehaviour {
         return inputVector;
     }
 
+    public bool GetJumpAction()
+    {
+        return playerInputActions.Player.Jump.ReadValue<bool>();
+    }
+
     public string GetBindingText(Binding binding) {
         switch (binding) {
             default:
@@ -97,6 +103,8 @@ public class GameInput : MonoBehaviour {
                 return playerInputActions.Player.InteractAlternate.bindings[0].ToDisplayString();
             case Binding.Pause:
                 return playerInputActions.Player.Pause.bindings[0].ToDisplayString();
+            case Binding.Jump:
+                return playerInputActions.Player.Jump.bindings[0].ToDisplayString();
             case Binding.Gamepad_Interact:
                 return playerInputActions.Player.Interact.bindings[1].ToDisplayString();
             case Binding.Gamepad_InteractAlternate:
@@ -136,6 +144,10 @@ public class GameInput : MonoBehaviour {
                 break;
             case Binding.InteractAlternate:
                 inputAction = playerInputActions.Player.InteractAlternate;
+                bindingIndex = 0;
+                break;
+            case Binding.Jump:
+                inputAction = playerInputActions.Player.Jump;
                 bindingIndex = 0;
                 break;
             case Binding.Pause:

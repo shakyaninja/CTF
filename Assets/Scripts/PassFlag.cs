@@ -6,16 +6,19 @@ public class PassFlag : MonoBehaviour
 {
     public bool isPassable = true;
     public GameObject Flag;
-    // Start is called before the first frame update
-    void Start()
+    
+    public void ActivateFlag()
     {
-        
+        Debug.Log("activated flag ...");
+        Flag.SetActive(true);
+        isPassable = true;
     }
 
-    // Update is called once per frame
-    void Update()
+    public void DeactivateFlag() 
     {
-        
+        Debug.Log("deactivated flag ...");
+        Flag.SetActive(false);
+        isPassable = false;
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -24,14 +27,9 @@ public class PassFlag : MonoBehaviour
         {
             if(isPassable)
             {
-                collision.gameObject.GetComponent<PassFlag>().Flag.SetActive(true);
-                collision.gameObject.GetComponent<PassFlag>().isPassable = true;
-                Flag.SetActive(false);
-                isPassable = false;
+                collision.gameObject.GetComponent<PassFlag>().ActivateFlag();
+                DeactivateFlag();
             }
-            /*Transform flag = collision.transform.GetChild(0);
-            flag.SetParent(gameObject.transform);
-            flag.localPosition = Vector3.zero + new Vector3(0,3,0);*/
             isPassable = false;
         }
     }
